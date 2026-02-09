@@ -4,41 +4,45 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-// هذا السطر مهم جداً لتمكين قراءة الـ JSON المرسل في جسم الطلب
-app.use(express.json()); 
 
-let data = {
+// بيانات تجريبية احترافية
+const data = {
     hotels: [
-        { id: 1, name: "Burj Al Arab", city: "Dubai", country: "UAE", stars: 7, price_range: "$$$$", description: "Iconic sail-shaped hotel on its own island." },
-        // ... بقية بيانات الفنادق والمطاعم
+        { id: 1, name: "Burj Al Arab Jumeirah", city: "Dubai", country: "UAE", stars: 7, description: "Iconic hotel." },
+        { id: 2, name: "The Ritz-Carlton, Paris", city: "Paris", country: "France", stars: 5, description: "Legendary luxury." },
+        { id: 3, name: "Marina Bay Sands", city: "Singapore", country: "Singapore", stars: 5, description: "Infinity pool." },
+        { id: 4, name: "The Plaza Hotel", city: "New York", country: "USA", stars: 5, description: "Historic luxury." }
     ],
     restaurants: [
-        // ... بيانات المطاعم
+        { id: 1, name: "Noma", city: "Copenhagen", country: "Denmark", cuisine: "New Nordic", michelin_stars: 3 },
+        { id: 2, name: "Osteria Francescana", city: "Modena", country: "Italy", cuisine: "Italian (Modern)", michelin_stars: 3 }
     ]
 };
 
-// ... بقية الـ Endpoints الأخرى (GET /api/hotels, GET /api/restaurants) ...
-
-// **نقطة نهاية جديدة لإضافة فندق (POST Endpoint)**
-app.post('/api/hotels/add', (req, res) => {
-    // البيانات الجديدة تأتي من جسم الطلب (Body)
-    const newHotel = req.body; 
-
-    // التحقق البسيط من البيانات (يجب أن يكون الاسم موجوداً)
-    if (!newHotel || !newHotel.name) {
-        return res.status(400).json({ message: "Hotel name is required" });
+// GET /api/hotels: جلب كل الفنادق أو التصفية حسب المدينة
+app.get('/api/hotels', (req, res) => {
+    // نستخدم req.query لقراءة المعلمات من الرابط (مثال: ?city=Dubai)
+    const cityFilter = req.query.city; 
+    
+    if (cityFilter) {
+        const filteredHotels = data.hotels.filter(h => h.city.toLowerCase() === cityFilter.toLowerCase());
+        return res.json(filteredHotels);
     }
+    
+    res.json(data.hotels);
+});
 
-    // إضافة معرف فريد مؤقت (ID)
-    newHotel.id = data.hotels.length + 1;
-    // إضافة الفندق الجديد إلى المصفوفة المؤقتة
-    data.hotels.push(newHotel);
+// GET /api/restaurants: جلب كل المطاعم أو التصفية حسب المطبخ
+app.get('/api/restaurants', (req, res) => {
+    // نستخدم req.query لقراءة المعلمات من الرابط (مثال: ?cuisine=Italian)
+    const cuisineFilter = req.query.cuisine; 
 
-    // إرسال رد إيجابي للعميل مع الفندق المضاف
-    res.status(201).json({ 
-        message: "Hotel added successfully", 
-        hotel: newHotel 
-    });
+    if (cuisineFilter) {
+        const filteredRestaurants = data.restaurants.filter(r => r.cuisine.toLowerCase().includes(cuisineFilter.toLowerCase()));
+        return res.json(filteredRestaurants);
+    }
+    
+    res.json(data.restaurants);
 });
 
 // تشغيل السيرفر
