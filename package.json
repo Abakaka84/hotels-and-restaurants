@@ -1,7 +1,7 @@
 {
-  "name": "global-travel-api",
+  "name": "global-travel-api-get-only",
   "version": "1.0.0",
-  "description": "API for global hotels and restaurants data",
+  "description": "Professional API for global hotels and restaurants data using GET requests only.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
