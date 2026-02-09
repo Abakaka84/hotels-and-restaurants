@@ -4,51 +4,44 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+// هذا السطر مهم جداً لتمكين قراءة الـ JSON المرسل في جسم الطلب
+app.use(express.json()); 
 
-// بيانات تجريبية احترافية
-const data = {
+let data = {
     hotels: [
         { id: 1, name: "Burj Al Arab", city: "Dubai", country: "UAE", stars: 7, price_range: "$$$$", description: "Iconic sail-shaped hotel on its own island." },
-        { id: 2, name: "The Ritz-Carlton", city: "Paris", country: "France", stars: 5, price_range: "$$$", description: "Legendary luxury hotel in the heart of Paris." },
-        { id: 3, name: "Marina Bay Sands", city: "Singapore", country: "Singapore", stars: 5, price_range: "$$$", description: "Famous for its infinity pool and unique architecture." },
-        { id: 4, name: "The Plaza Hotel", city: "New York", country: "USA", stars: 5, price_range: "$$$$", description: "Historic luxury hotel overlooking Central Park." }
+        // ... بقية بيانات الفنادق والمطاعم
     ],
     restaurants: [
-        { id: 1, name: "Noma", city: "Copenhagen", country: "Denmark", cuisine: "Nordic", rating: 4.9, michelin_stars: 3 },
-        { id: 2, name: "Osteria Francescana", city: "Modena", country: "Italy", cuisine: "Italian", rating: 4.8, michelin_stars: 3 },
-        { id: 3, name: "Nobu", city: "New York", country: "USA", cuisine: "Japanese-Peruvian", rating: 4.6, michelin_stars: 1 },
-        { id: 4, name: "Gaggan Anand", city: "Bangkok", country: "Thailand", cuisine: "Progressive Indian", rating: 4.9, michelin_stars: 2 }
+        // ... بيانات المطاعم
     ]
 };
 
-// الصفحة الرئيسية (Root Endpoint)
-app.get('/', (req, res) => {
-    res.send('Welcome to Global Hotels & Restaurants API. Use /api/hotels or /api/restaurants');
-});
+// ... بقية الـ Endpoints الأخرى (GET /api/hotels, GET /api/restaurants) ...
 
-// الحصول على كافة الفنادق أو التصفية حسب المدينة
-app.get('/api/hotels', (req, res) => {
-    const city = req.query.city;
-    if (city) {
-        const filteredHotels = data.hotels.filter(h => h.city.toLowerCase() === city.toLowerCase());
-        return res.json(filteredHotels);
-    }
-    res.json(data.hotels);
-});
+// **نقطة نهاية جديدة لإضافة فندق (POST Endpoint)**
+app.post('/api/hotels/add', (req, res) => {
+    // البيانات الجديدة تأتي من جسم الطلب (Body)
+    const newHotel = req.body; 
 
-// الحصول على كافة المطاعم أو التصفية حسب المطبخ (Cuisine)
-app.get('/api/restaurants', (req, res) => {
-    const cuisine = req.query.cuisine;
-    if (cuisine) {
-        const filteredRestaurants = data.restaurants.filter(r => r.cuisine.toLowerCase() === cuisine.toLowerCase());
-        return res.json(filteredRestaurants);
+    // التحقق البسيط من البيانات (يجب أن يكون الاسم موجوداً)
+    if (!newHotel || !newHotel.name) {
+        return res.status(400).json({ message: "Hotel name is required" });
     }
-    res.json(data.restaurants);
+
+    // إضافة معرف فريد مؤقت (ID)
+    newHotel.id = data.hotels.length + 1;
+    // إضافة الفندق الجديد إلى المصفوفة المؤقتة
+    data.hotels.push(newHotel);
+
+    // إرسال رد إيجابي للعميل مع الفندق المضاف
+    res.status(201).json({ 
+        message: "Hotel added successfully", 
+        hotel: newHotel 
+    });
 });
 
 // تشغيل السيرفر
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-
