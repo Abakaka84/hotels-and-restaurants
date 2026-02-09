@@ -1,3 +1,6 @@
+app.get('/api/hotels', ...)
+app.get('/api/restaurants', ...)
+
 const express = require('express');
 const cors = require('cors');
 const app = express();
