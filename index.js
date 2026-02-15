@@ -8,76 +8,92 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ------------------ DATA ------------------
+/* ===========================
+   GLOBAL STATIC DATA
+=========================== */
+
 const cities = [
-  "Paris", "London", "Dubai", "New York", "Tokyo",
-  "Berlin", "Rome", "Istanbul", "Bangkok", "Cairo",
-  "Johannesburg", "São Paulo", "Sydney", "Toronto", "Madrid"
+  "Paris","London","Dubai","New York","Tokyo",
+  "Berlin","Rome","Istanbul","Bangkok","Cairo",
+  "Johannesburg","São Paulo","Sydney","Toronto","Madrid"
 ];
 
 const countries = {
-  Paris: "France", London: "UK", Dubai: "UAE", "New York": "USA",
-  Tokyo: "Japan", Berlin: "Germany", Rome: "Italy", Istanbul: "Turkey",
-  Bangkok: "Thailand", Cairo: "Egypt", Johannesburg: "South Africa",
-  "São Paulo": "Brazil", Sydney: "Australia", Toronto: "Canada", Madrid: "Spain"
+  Paris:"France", London:"UK", Dubai:"UAE", "New York":"USA",
+  Tokyo:"Japan", Berlin:"Germany", Rome:"Italy", Istanbul:"Turkey",
+  Bangkok:"Thailand", Cairo:"Egypt", Johannesburg:"South Africa",
+  "São Paulo":"Brazil", Sydney:"Australia", Toronto:"Canada", Madrid:"Spain"
 };
 
 const cuisines = [
-  "Italian", "French", "Japanese", "Chinese",
-  "American", "Indian", "Arabic", "Mexican",
-  "Mediterranean", "Korean", "Thai"
+  "Italian","French","Japanese","Chinese",
+  "American","Indian","Arabic","Mexican",
+  "Mediterranean","Korean","Thai"
 ];
 
-// ------------------ HELPER FUNCTIONS ------------------
-function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function randomItem(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 function generateHotels(count) {
-  const hotels = [];
+  const list = [];
   for (let i = 1; i <= count; i++) {
     const city = randomItem(cities);
-    hotels.push({
+    list.push({
       id: i,
       name: `Global Hotel ${i}`,
       city,
       country: countries[city],
-      rating: +(Math.random() * (5 - 3.5) + 3.5).toFixed(1),
-      price_level: "$".repeat(Math.floor(Math.random() * 4) + 2)
+      rating: +(Math.random() * 1.5 + 3.5).toFixed(1),
+      price_level: "$".repeat(Math.floor(Math.random() * 4) + 1)
     });
   }
-  return hotels;
+  return list;
 }
 
 function generateRestaurants(count) {
-  const restaurants = [];
+  const list = [];
   for (let i = 1; i <= count; i++) {
     const city = randomItem(cities);
-    restaurants.push({
+    list.push({
       id: i,
       name: `Global Restaurant ${i}`,
       city,
       country: countries[city],
       cuisine: randomItem(cuisines),
-      rating: +(Math.random() * (5 - 3.5) + 3.5).toFixed(1),
+      rating: +(Math.random() * 1.5 + 3.5).toFixed(1),
       price_level: "$".repeat(Math.floor(Math.random() * 4) + 1)
     });
   }
-  return restaurants;
+  return list;
 }
 
 const hotels = generateHotels(1000);
 const restaurants = generateRestaurants(1000);
 
-// ------------------ Yelp API ------------------
-const YELP_API_KEY ="_Wc6HGZHp0fu6FKEw_sjr_jFxMAV5EanF0w1Zo545g1N7RWRHX7z9PWPvIBEguBzLRrLk9Tq904LSv84Z4UQfKS7I-YPV1FNIBidQt-62vhvbY5PMHvf2xTBf52RaXYx";
+/* ===========================
+   YELP FUNCTION
+=========================== */
 
-async function fetchYelpRestaurants(city) {
-  if (!city) return [];
+async function fetchYelp(city) {
   try {
-    const res = await axios.get(`https://api.yelp.com/v3/businesses/search`, {
-      headers: { Authorization: `Bearer ${YELP_API_KEY}` },
-      params: { term: "restaurants", location: city, limit: 20 }
-    });
-    return res.data.businesses.map(b => ({
+    if (!process.env.YELP_API_KEY || !city) return [];
+
+    const response = await axios.get(
+      "https://api.yelp.com/v3/businesses/search",
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.YELP_API_KEY}`
+        },
+        params: {
+          term: "restaurants",
+          location: city,
+          limit: 20
+        }
+      }
+    );
+
+    return response.data.businesses.map(b => ({
       id: b.id,
       name: b.name,
       city: city,
@@ -87,74 +103,85 @@ async function fetchYelpRestaurants(city) {
       price_level: b.price || "$$"
     }));
   } catch (err) {
-    console.error("Yelp fetch error:", err.message);
+    console.log("Yelp failed safely");
     return [];
   }
 }
 
-// ------------------ FILTER FUNCTION ------------------
+/* ===========================
+   FILTER + PAGINATION
+=========================== */
+
 function applyFilters(data, query) {
   let result = [...data];
 
   if (query.city)
-    result = result.filter(item => item.city.toLowerCase() === query.city.toLowerCase());
-  if (query.country)
-    result = result.filter(item => item.country.toLowerCase() === query.country.toLowerCase());
-  if (query.cuisine)
-    result = result.filter(item => item.cuisine.toLowerCase() === query.cuisine.toLowerCase());
+    result = result.filter(i =>
+      i.city.toLowerCase() === query.city.toLowerCase()
+    );
+
   if (query.min_rating)
-    result = result.filter(item => item.rating >= parseFloat(query.min_rating));
-  if (query.price_level)
-    result = result.filter(item => item.price_level === query.price_level);
+    result = result.filter(i =>
+      i.rating >= parseFloat(query.min_rating)
+    );
+
   if (query.sort_by === "rating")
-    result.sort((a, b) => b.rating - a.rating);
+    result.sort((a,b)=> b.rating - a.rating);
 
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 10;
   const start = (page - 1) * limit;
-  const end = start + limit;
 
   return {
     total: result.length,
     page,
     limit,
-    data: result.slice(start, end)
+    data: result.slice(start, start + limit)
   };
 }
 
-// ------------------ ENDPOINTS ------------------
-app.get("/api/restaurants", async (req, res) => {
-  const city = req.query.city;
-  const filteredGenerated = applyFilters(restaurants, req.query);
+/* ===========================
+   ROUTES
+=========================== */
 
-  // جلب بيانات Yelp الحقيقية إذا حددت المدينة
-  let yelpData = [];
-  if (city) yelpData = await fetchYelpRestaurants(city);
-
-  // دمج البيانات المولدة + Yelp
-  const combined = [...yelpData, ...filteredGenerated];
-
-  // تطبيق Pagination على الكل
-  const result = applyFilters(combined, req.query);
-
-  res.json({ success: true, total: combined.length, ...result });
-});
-
-app.get("/api/hotels", (req, res) => {
-  const result = applyFilters(hotels, req.query);
-  res.json({ success: true, total: hotels.length, ...result });
-});
-
-app.get("/", (req, res) => {
+app.get("/", (req,res)=>{
   res.json({
-    status: "running",
-    version: "4.0.0",
-    total_hotels: hotels.length,
-    total_restaurants: restaurants.length,
-    message: "Global Hotels & Restaurants API Hybrid 🌍🚀"
+    status:"running",
+    hotels: hotels.length,
+    restaurants: restaurants.length,
+    version:"5.0.0"
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.get("/api/hotels", (req,res)=>{
+  const result = applyFilters(hotels, req.query);
+  res.json(result);
+});
+
+app.get("/api/restaurants", async (req,res)=>{
+  const city = req.query.city;
+
+  let generated = restaurants;
+
+  if (city) {
+    generated = restaurants.filter(r =>
+      r.city.toLowerCase() === city.toLowerCase()
+    );
+  }
+
+  const yelpData = await fetchYelp(city);
+
+  const combined = [...yelpData, ...generated];
+
+  const result = applyFilters(combined, req.query);
+
+  res.json(result);
+});
+
+/* ===========================
+   SERVER
+=========================== */
+
+app.listen(PORT, ()=>{
+  console.log("Server running on port " + PORT);
 });
