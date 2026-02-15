@@ -1,13 +1,14 @@
 {
-  "name": "global-travel-api-get-only",
+  "name": "global-travel-api-live",
   "version": "1.0.0",
-  "description": "Professional API for global hotels and restaurants data using GET requests only.",
+  "description": "Live API for hotels and restaurants using Yelp data",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "express": "^4.19.2",
+    "axios": "^1.6.0",
     "cors": "^2.8.5"
   }
 }
