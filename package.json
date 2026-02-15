@@ -1,14 +1,14 @@
 {
-  "name": "global-travel-api-live",
+  "name": "global-hotels-restaurants-api",
   "version": "1.0.0",
-  "description": "Live API for hotels and restaurants using Yelp data",
+  "description": "Global Hotels & Restaurants API - Hybrid (Generated + Yelp)",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5"
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0"
   }
 }
